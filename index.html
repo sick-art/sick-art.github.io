@@ -221,6 +221,8 @@
         .tab-content {
             display: none;
             min-height: calc(100vh - 140px);
+            position: relative;
+            z-index: 1;
         }
 
         .tab-content.active {
@@ -267,6 +269,119 @@
         .game-frame iframe {
             border: none;
             border-radius: 10px;
+        }
+
+        /* Dropdown Styles */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-btn {
+            padding: 12px 25px;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown-btn:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .dropdown-btn.active {
+            background: var(--bg-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 10px;
+            background: rgba(10, 14, 39, 0.98);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            overflow: hidden;
+            animation: dropdownFade 0.3s ease;
+        }
+
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown.show .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(74, 127, 255, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .dropdown-item.active {
+            background: var(--bg-gradient);
+            color: white;
+        }
+
+        .dropdown-item-icon {
+            font-size: 1.2rem;
+            width: 25px;
+            text-align: center;
+        }
+
+        .dropdown-item-text {
+            flex: 1;
+        }
+
+        .dropdown-item-desc {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        /* Individual game content areas */
+        .game-content {
+            display: none;
+        }
+
+        .game-content.active {
+            display: block;
         }
 
         /* Hero Section */
@@ -586,7 +701,7 @@
                 <li><a href="#" onclick="switchTab('home', event); return false;">Home</a></li>
                 <li><a href="#expertise" onclick="switchTab('home', event); return false;">Expertise</a></li>
                 <li><a href="#about" onclick="switchTab('home', event); return false;">About</a></li>
-                <li><a href="#" onclick="switchTab('arcade', event); return false;">🕹️ Arcade</a></li>
+                <li><a href="#" onclick="selectGame('tetris'); return false;">🕹️ Arcade</a></li>
                 <li><a href="#contact" onclick="switchTab('home', event); return false;">Contact</a></li>
             </ul>
         </div>
@@ -597,9 +712,41 @@
         <button class="tab-btn active" onclick="switchTab('home')">
             <i class="fas fa-home"></i> Portfolio
         </button>
-        <button class="tab-btn" onclick="switchTab('arcade')">
-            <i class="fas fa-gamepad"></i> Pixel Arcade
-        </button>
+        <div class="dropdown" id="arcadeDropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown(event)">
+                <i class="fas fa-gamepad"></i> Pixel Arcade <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-content">
+                <div class="dropdown-item active" onclick="selectGame('tetris')">
+                    <div class="dropdown-item-icon">🧱</div>
+                    <div class="dropdown-item-text">
+                        <div>Tetris</div>
+                        <div class="dropdown-item-desc">Classic block stacking</div>
+                    </div>
+                </div>
+                <div class="dropdown-item" onclick="alert('Snake coming soon!')">
+                    <div class="dropdown-item-icon">🐍</div>
+                    <div class="dropdown-item-text">
+                        <div>Snake</div>
+                        <div class="dropdown-item-desc">Coming soon</div>
+                    </div>
+                </div>
+                <div class="dropdown-item" onclick="alert('Pong coming soon!')">
+                    <div class="dropdown-item-icon">🏓</div>
+                    <div class="dropdown-item-text">
+                        <div>Pong</div>
+                        <div class="dropdown-item-desc">Coming soon</div>
+                    </div>
+                </div>
+                <div class="dropdown-item" onclick="alert('Memory Match coming soon!')">
+                    <div class="dropdown-item-icon">🧠</div>
+                    <div class="dropdown-item-text">
+                        <div>Memory</div>
+                        <div class="dropdown-item-desc">Coming soon</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Tab Content: Portfolio -->
@@ -730,20 +877,108 @@
 
     <!-- Tab Content: Arcade -->
     <div id="tab-arcade" class="tab-content">
-        <div class="game-wrapper">
-            <div>
-                <div class="game-header">
-                    <h2>🕹️ Pixel Arcade</h2>
-                    <p>Take a break and stack some blocks! Open in multiple tabs for multiplayer mode.</p>
-                </div>
-                <div class="game-frame">
-                    <iframe src="brick-game.html" width="600" height="650" title="Brick Game - Multiplayer Tetris"></iframe>
+        <!-- Default message when no game is selected -->
+        <div class="game-wrapper" id="arcadeWelcome" style="display: flex;">
+            <div style="text-align: center;">
+                <h2 style="font-size: 2rem; margin-bottom: 20px;">🕹️ Welcome to Pixel Arcade</h2>
+                <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 500px; margin: 0 auto 30px;">Select a game from the dropdown menu above to start playing!</p>
+                <div style="font-size: 4rem; margin-bottom: 20px;">🎮</div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">Click on "Pixel Arcade" to see available games</p>
+            </div>
+        </div>
+
+        <!-- Tetris Game -->
+        <div class="game-content" id="game-tetris">
+            <div class="game-wrapper">
+                <div>
+                    <div class="game-header">
+                        <h2>🧱 Tetris</h2>
+                        <p>Classic block stacking! Open in multiple tabs for multiplayer mode.</p>
+                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--primary-blue);">Select another game from the dropdown to switch games</p>
+                    </div>
+                    <div class="game-frame">
+                        <iframe src="brick-game.html" width="600" height="650" title="Tetris - Multiplayer"></iframe>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('arcadeDropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Dropdown Toggle
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('arcadeDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Game Selection
+        let currentGame = null;
+
+        function selectGame(gameId) {
+            console.log('selectGame called with:', gameId);
+
+            // Switch to arcade tab if not already there
+            switchTab('arcade');
+
+            // Hide welcome message
+            const arcadeWelcome = document.getElementById('arcadeWelcome');
+            if (arcadeWelcome) {
+                arcadeWelcome.style.display = 'none';
+            }
+
+            // Hide all game contents
+            document.querySelectorAll('.game-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Show selected game
+            const gameContent = document.getElementById('game-' + gameId);
+            console.log('gameContent element:', gameContent);
+            if (gameContent) {
+                gameContent.classList.add('active');
+                console.log('Game content activated');
+            } else {
+                console.log('Game content not found for:', gameId);
+            }
+
+            // Update dropdown active state
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const dropdownItem = document.querySelector(`.dropdown-item[onclick="selectGame('${gameId}')"]`);
+            if (dropdownItem) {
+                dropdownItem.classList.add('active');
+            }
+
+            // Activate arcade dropdown button
+            document.querySelectorAll('.dropdown-btn').forEach(btn => {
+                btn.classList.add('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            currentGame = gameId;
+
+            // Close dropdown
+            const dropdown = document.getElementById('arcadeDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // Tab Switching
         function switchTab(tabName, event) {
             // Hide all tab contents
@@ -755,23 +990,45 @@
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
+            document.querySelectorAll('.dropdown-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
 
             // Show selected tab content
-            document.getElementById('tab-' + tabName).classList.add('active');
+            const tabContent = document.getElementById('tab-' + tabName);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
+
+            // Reset to welcome when switching to arcade tab without a game selected
+            if (tabName === 'arcade' && !currentGame) {
+                const arcadeWelcome = document.getElementById('arcadeWelcome');
+                if (arcadeWelcome) {
+                    arcadeWelcome.style.display = 'flex';
+                    arcadeWelcome.style.alignItems = 'center';
+                    arcadeWelcome.style.justifyContent = 'center';
+                }
+                document.querySelectorAll('.game-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+            }
 
             // Add active class to clicked button
             if (event && event.target) {
-                const clickedBtn = event.target.closest('.tab-btn');
+                const clickedBtn = event.target.closest('.tab-btn, .dropdown-btn');
                 if (clickedBtn) {
                     clickedBtn.classList.add('active');
                 }
             } else {
                 // If called without event, find the button by onclick attribute
                 document.querySelectorAll('.tab-btn').forEach(btn => {
-                    if (btn.getAttribute('onclick').includes(tabName)) {
+                    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabName)) {
                         btn.classList.add('active');
                     }
                 });
+                if (tabName === 'arcade') {
+                    document.querySelector('.dropdown-btn').classList.add('active');
+                }
             }
 
             // Scroll to top
