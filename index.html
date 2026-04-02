@@ -172,6 +172,103 @@
             color: var(--primary-blue);
         }
 
+        /* Tab System */
+        .tab-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 60px;
+            z-index: 999;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            min-height: calc(100vh - 140px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Game Tab Styles */
+        .game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h2 {
+            font-size: 2rem;
+            background: var(--bg-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .game-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .game-frame {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-frame iframe {
+            border: none;
+            border-radius: 10px;
+        }
+
         /* Hero Section */
         .hero {
             min-height: 100vh;
@@ -486,14 +583,27 @@
         <div class="nav-container">
             <div class="logo">AT</div>
             <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#expertise">Expertise</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
+                <li><a href="#" onclick="switchTab('home', event); return false;">Home</a></li>
+                <li><a href="#expertise" onclick="switchTab('home', event); return false;">Expertise</a></li>
+                <li><a href="#about" onclick="switchTab('home', event); return false;">About</a></li>
+                <li><a href="#" onclick="switchTab('arcade', event); return false;">🕹️ Arcade</a></li>
+                <li><a href="#contact" onclick="switchTab('home', event); return false;">Contact</a></li>
             </ul>
         </div>
     </nav>
 
+    <!-- Tab Navigation -->
+    <div class="tab-nav" id="tabNav">
+        <button class="tab-btn active" onclick="switchTab('home')">
+            <i class="fas fa-home"></i> Portfolio
+        </button>
+        <button class="tab-btn" onclick="switchTab('arcade')">
+            <i class="fas fa-gamepad"></i> Pixel Arcade
+        </button>
+    </div>
+
+    <!-- Tab Content: Portfolio -->
+    <div id="tab-home" class="tab-content active">
     <!-- Hero Section -->
     <section id="home" class="hero">
         <div class="hero-content">
@@ -616,8 +726,58 @@
     <footer>
         <p>&copy; 2025 Aarti Tyagi. All rights reserved.</p>
     </footer>
+    </div>
+
+    <!-- Tab Content: Arcade -->
+    <div id="tab-arcade" class="tab-content">
+        <div class="game-wrapper">
+            <div>
+                <div class="game-header">
+                    <h2>🕹️ Pixel Arcade</h2>
+                    <p>Take a break and stack some blocks! Open in multiple tabs for multiplayer mode.</p>
+                </div>
+                <div class="game-frame">
+                    <iframe src="brick-game.html" width="600" height="650" title="Brick Game - Multiplayer Tetris"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
+        // Tab Switching
+        function switchTab(tabName, event) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById('tab-' + tabName).classList.add('active');
+
+            // Add active class to clicked button
+            if (event && event.target) {
+                const clickedBtn = event.target.closest('.tab-btn');
+                if (clickedBtn) {
+                    clickedBtn.classList.add('active');
+                }
+            } else {
+                // If called without event, find the button by onclick attribute
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(tabName)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const navbar = document.getElementById('navbar');
