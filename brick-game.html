@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brick Game - Multiplayer Tetris</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #222;
+            font-family: 'Courier New', monospace;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .device {
+            background: linear-gradient(145deg, #8b8b8b, #6b6b6b);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow:
+                inset 2px 2px 5px rgba(255,255,255,0.2),
+                inset -2px -2px 5px rgba(0,0,0,0.3),
+                5px 5px 20px rgba(0,0,0,0.5);
+        }
+
+        .screen-frame {
+            background: #4a4a4a;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .screen {
+            background: #9ba387;
+            border: 2px solid #333;
+            display: flex;
+            gap: 10px;
+        }
+
+        .game-board {
+            width: 200px;
+            height: 400px;
+            position: relative;
+        }
+
+        .side-panel {
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .side-box {
+            background: #8a9377;
+            border: 1px solid #333;
+            padding: 5px;
+        }
+
+        .side-box-label {
+            font-size: 10px;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .next-piece-box {
+            width: 50px;
+            height: 50px;
+        }
+
+        .score-box {
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+        }
+
+        .player-box {
+            background: #8a9377;
+            border: 1px solid #333;
+            padding: 5px;
+        }
+
+        .player-name {
+            font-size: 10px;
+            color: #333;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        /* Live Dashboard Panel */
+        .live-dashboard {
+            background: linear-gradient(145deg, #8b8b8b, #6b6b6b);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow:
+                inset 2px 2px 5px rgba(255,255,255,0.2),
+                inset -2px -2px 5px rgba(0,0,0,0.3),
+                5px 5px 20px rgba(0,0,0,0.5);
+            width: 220px;
+        }
+
+        .live-dashboard h3 {
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #4a4a4a;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 10px;
+            color: #4ade80;
+            margin-bottom: 10px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .live-players-list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .live-player-entry {
+            background: #9ba387;
+            border: 1px solid #333;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .live-player-entry.is-me {
+            background: #feca57;
+            border-color: #e94560;
+        }
+
+        .live-player-entry.updated {
+            animation: flash 0.3s;
+        }
+
+        @keyframes flash {
+            0% { background: #4ade80; }
+            100% { background: inherit; }
+        }
+
+        .live-player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .live-player-name {
+            font-size: 11px;
+            color: #2a2a2a;
+            font-weight: bold;
+        }
+
+        .live-player-status {
+            font-size: 8px;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        .live-player-status.playing {
+            background: #4ade80;
+            color: #2a2a2a;
+        }
+
+        .live-player-status.gameover {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .live-player-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .live-player-score {
+            font-size: 14px;
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .live-player-bar {
+            height: 4px;
+            background: #8a9377;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .live-player-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #feca57, #e94560);
+            transition: width 0.3s ease;
+        }
+
+        .no-players {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 11px;
+        }
+
+        .players-count {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 5px;
+        }
+
+        .btn {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(145deg, #7a7a7a, #5a5a5a);
+            border: none;
+            border-radius: 5px;
+            color: #333;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                inset 1px 1px 2px rgba(255,255,255,0.3),
+                inset -1px -1px 2px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            background: linear-gradient(145deg, #5a5a5a, #7a7a7a);
+        }
+
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+
+        .action-btns {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 30px;
+            background: linear-gradient(145deg, #d4534a, #b4433a);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow:
+                inset 1px 1px 2px rgba(255,255,255,0.3),
+                inset -1px -1px 2px rgba(0,0,0,0.3);
+        }
+
+        .action-btn:active {
+            background: linear-gradient(145deg, #b4433a, #d4534a);
+        }
+
+        .label {
+            color: #555;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .name-entry {
+            background: #9ba387;
+            padding: 15px;
+        }
+
+        .name-entry h2 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .name-input {
+            background: #8a9377;
+            border: 2px solid #333;
+            color: #2a2a2a;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 8px 10px;
+            width: 150px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .name-input::placeholder {
+            color: #5a5a5a;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #2a2a2a;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            background: #333;
+            color: #9ba387;
+            border: none;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 2px;
+        }
+
+        .mode-btn:hover {
+            background: #444;
+        }
+
+        .mode-select {
+            background: #9ba387;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .mode-select h2 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            animation: blink 1s infinite;
+        }
+
+        .player-display {
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .game-over-overlay {
+            background: rgba(0,0,0,0.9);
+            color: #9ba387;
+            font-size: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .game-over-overlay h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .new-high {
+            color: #feca57;
+            font-size: 12px;
+            margin: 5px 0;
+            animation: blink 0.5s infinite;
+        }
+
+        .leaderboard-overlay {
+            background: #9ba387;
+            padding: 10px;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .leaderboard-overlay h3 {
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .leaderboard-list {
+            font-size: 11px;
+            color: #2a2a2a;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 5px;
+            border-bottom: 1px solid #8a9377;
+        }
+
+        .leaderboard-entry.highlight {
+            background: #8a9377;
+            font-weight: bold;
+        }
+
+        .rank {
+            width: 25px;
+        }
+
+        .name {
+            flex: 1;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .score {
+            width: 50px;
+            text-align: right;
+        }
+
+        .leaderboard-footer {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .back-btn {
+            padding: 6px 15px;
+            background: #333;
+            color: #9ba387;
+            border: none;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .view-leaderboard {
+            padding: 6px 15px;
+            background: #444;
+            color: #9ba387;
+            border: none;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .controls-info {
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .multiplayer-hint {
+            background: #4a4a4a;
+            color: #9ba387;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 9px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="device">
+            <div class="screen-frame">
+                <div class="screen">
+                    <div class="game-board" id="gameBoard">
+                        <canvas id="gameCanvas" width="200" height="400"></canvas>
+
+                        <!-- Name Entry Screen -->
+                        <div class="overlay name-entry" id="nameEntry">
+                            <h2>🎮 BRICK GAME 🎮</h2>
+                            <div style="font-size: 11px; color: #333; margin-bottom: 5px;">MULTIPLAYER EDITION</div>
+                            <div style="font-size: 10px; color: #555; margin-bottom: 10px;">ENTER YOUR NAME:</div>
+                            <input type="text" class="name-input" id="nameInput" placeholder="PLAYER" maxlength="10">
+                            <button class="mode-btn" onclick="submitName()">JOIN GAME</button>
+                            <div style="margin-top: 10px; font-size: 9px; color: #555;">Open in multiple tabs to play with friends!</div>
+                        </div>
+
+                        <!-- Mode Selection -->
+                        <div class="overlay mode-select" id="modeSelect">
+                            <div class="player-display">PLAYER: <span id="currentPlayer">-</span></div>
+                            <h2>SELECT MODE</h2>
+                            <button class="mode-btn" onclick="startGame(0)">EASY</button>
+                            <button class="mode-btn" onclick="startGame(1)">NORMAL</button>
+                            <button class="mode-btn" onclick="startGame(2)">HARD</button>
+                            <button class="view-leaderboard" onclick="showLeaderboard()">VIEW LEADERBOARD</button>
+                        </div>
+
+                        <!-- Game Over -->
+                        <div class="overlay game-over-overlay" id="gameOver">
+                            <h3>GAME OVER</h3>
+                            <div style="font-size: 12px;">Score: <span id="finalScore">0</span></div>
+                            <div class="new-high" id="newHigh" style="display: none;">NEW HIGH SCORE!</div>
+                            <div class="new-high" id="yourRank" style="display: none;"></div>
+                            <div style="margin-top: 15px;">
+                                <button class="mode-btn" onclick="showModeSelect()">PLAY AGAIN</button>
+                            </div>
+                            <div>
+                                <button class="view-leaderboard" onclick="showLeaderboard()">LEADERBOARD</button>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard -->
+                        <div class="overlay leaderboard-overlay" id="leaderboard">
+                            <h3>🏆 ALL-TIME BEST 🏆</h3>
+                            <div class="leaderboard-list" id="leaderboardList"></div>
+                            <div class="leaderboard-footer">
+                                <button class="back-btn" onclick="showModeSelect()">BACK</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-panel">
+                        <div class="player-box">
+                            <div class="side-box-label">PLAYER</div>
+                            <div class="player-name" id="playerName">-</div>
+                        </div>
+                        <div class="side-box">
+                            <div class="side-box-label">NEXT</div>
+                            <canvas id="nextCanvas" class="next-piece-box" width="50" height="50"></canvas>
+                        </div>
+                        <div class="side-box">
+                            <div class="side-box-label">SCORE</div>
+                            <div class="score-box" id="score">0</div>
+                        </div>
+                        <div class="side-box">
+                            <div class="side-box-label">LEVEL</div>
+                            <div class="score-box" id="level">1</div>
+                        </div>
+                        <div class="side-box">
+                            <div class="side-box-label">LINES</div>
+                            <div class="score-box" id="lines">0</div>
+                        </div>
+                        <div class="side-box">
+                            <div class="side-box-label">HIGH</div>
+                            <div class="score-box" id="highScore">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="d-pad">
+                    <button class="btn btn-up" id="btnUp">↑</button>
+                    <button class="btn btn-left" id="btnLeft">←</button>
+                    <button class="btn btn-down" id="btnDown">↓</button>
+                    <button class="btn btn-right" id="btnRight">→</button>
+                </div>
+                <div class="action-btns">
+                    <div>
+                        <button class="action-btn" id="btnRotate">ROT</button>
+                        <div class="label">↑ / Space</div>
+                    </div>
+                    <div>
+                        <button class="action-btn" id="btnDrop">DROP</button>
+                        <div class="label">Enter</div>
+                    </div>
+                </div>
+                <div class="controls-info">Arrows/WASD to move • Space to rotate • Enter to drop</div>
+                <div class="multiplayer-hint">📱 Open in new tabs for multiplayer!</div>
+            </div>
+        </div>
+
+        <!-- Live Dashboard -->
+        <div class="live-dashboard">
+            <h3>📊 LIVE SCOREBOARD</h3>
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span>LIVE</span>
+            </div>
+            <div class="players-count">
+                <span id="playersCount">1</span> player(s) online
+            </div>
+            <div class="live-players-list" id="livePlayersList">
+                <div class="no-players">Waiting for players...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+
+        const COLS = 10;
+        const ROWS = 20;
+        const BLOCK_SIZE = 20;
+        const LCD_COLOR = '#2a2a2a';
+        const LCD_BG = '#9ba387';
+
+        // Tetromino shapes
+        const SHAPES = [
+            [[1,1,1,1]],           // I
+            [[1,1],[1,1]],         // O
+            [[0,1,0],[1,1,1]],     // T
+            [[1,0,0],[1,1,1]],     // L
+            [[0,0,1],[1,1,1]],     // J
+            [[0,1,1],[1,1,0]],     // S
+            [[1,1,0],[0,1,1]]      // Z
+        ];
+
+        const SHAPE_NAMES = ['I', 'O', 'T', 'L', 'J', 'S', 'Z'];
+
+        let board = [];
+        let currentPiece = null;
+        let nextPiece = null;
+        let score = 0;
+        let level = 1;
+        let lines = 0;
+        let gameRunning = false;
+        let dropInterval = 1000;
+        let lastDrop = 0;
+        let gameMode = 1;
+        let playerName = '';
+        let playerId = '';
+        let isNewHighScore = false;
+
+        // Multiplayer - BroadcastChannel
+        const CHANNEL_NAME = 'brick-game-multiplayer';
+        const bc = new BroadcastChannel(CHANNEL_NAME);
+
+        // Live players tracking
+        const livePlayers = new Map();
+        const PLAYER_TIMEOUT = 5000; // 5 seconds without update = offline
+        const HEARTBEAT_INTERVAL = 1000; // Send update every second
+
+        // Storage keys
+        const STORAGE_KEY = 'brickGameLeaderboard';
+        const LIVE_STATE_KEY = 'brickGameLiveState';
+
+        // Generate unique player ID
+        function generatePlayerId() {
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ========== LEADERBOARD FUNCTIONS ==========
+        function getLeaderboard() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveLeaderboard(leaderboard) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(leaderboard));
+        }
+
+        function updateLeaderboard(name, score) {
+            const leaderboard = getLeaderboard();
+            if (!leaderboard[name] || score > leaderboard[name]) {
+                leaderboard[name] = score;
+                saveLeaderboard(leaderboard);
+                return true;
+            }
+            return false;
+        }
+
+        function getSortedLeaderboard() {
+            const leaderboard = getLeaderboard();
+            return Object.entries(leaderboard)
+                .map(([name, score]) => ({ name, score }))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 10);
+        }
+
+        function getPlayerHighScore(name) {
+            const leaderboard = getLeaderboard();
+            return leaderboard[name] || 0;
+        }
+
+        function renderLeaderboard(highlightName = null) {
+            const list = document.getElementById('leaderboardList');
+            const entries = getSortedLeaderboard();
+
+            if (entries.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 20px; color: #555;">No scores yet!</div>';
+                return;
+            }
+
+            list.innerHTML = entries.map((entry, index) => `
+                <div class="leaderboard-entry ${entry.name === highlightName ? 'highlight' : ''}">
+                    <span class="rank">${index + 1}.</span>
+                    <span class="name">${entry.name}</span>
+                    <span class="score">${entry.score}</span>
+                </div>
+            `).join('');
+        }
+
+        // ========== MULTIPLAYER FUNCTIONS ==========
+        function broadcastState() {
+            const state = {
+                type: 'update',
+                playerId: playerId,
+                name: playerName,
+                score: score,
+                level: level,
+                lines: lines,
+                status: gameRunning ? 'playing' : 'gameover',
+                timestamp: Date.now()
+            };
+            bc.postMessage(state);
+
+            // Also update local storage for backup
+            const liveState = JSON.parse(localStorage.getItem(LIVE_STATE_KEY) || '{}');
+            liveState[playerId] = state;
+            localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(liveState));
+        }
+
+        function broadcastGameOver() {
+            const state = {
+                type: 'gameover',
+                playerId: playerId,
+                name: playerName,
+                score: score,
+                timestamp: Date.now()
+            };
+            bc.postMessage(state);
+        }
+
+        function handleBroadcast(message) {
+            const data = message.data;
+
+            if (data.type === 'update' || data.type === 'gameover') {
+                if (data.playerId !== playerId) {
+                    livePlayers.set(data.playerId, {
+                        name: data.name,
+                        score: data.score,
+                        level: data.level || 1,
+                        lines: data.lines || 0,
+                        status: data.status,
+                        timestamp: data.timestamp
+                    });
+                    updateLiveDashboard();
+                }
+            }
+        }
+
+        function cleanupOfflinePlayers() {
+            const now = Date.now();
+            const toDelete = [];
+
+            livePlayers.forEach((data, id) => {
+                if (now - data.timestamp > PLAYER_TIMEOUT) {
+                    toDelete.push(id);
+                }
+            });
+
+            toDelete.forEach(id => livePlayers.delete(id));
+
+            // Also cleanup from local storage
+            const liveState = JSON.parse(localStorage.getItem(LIVE_STATE_KEY) || '{}');
+            let stateChanged = false;
+            Object.keys(liveState).forEach(id => {
+                if (now - liveState[id].timestamp > PLAYER_TIMEOUT) {
+                    delete liveState[id];
+                    stateChanged = true;
+                }
+            });
+            if (stateChanged) {
+                localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(liveState));
+            }
+
+            if (toDelete.length > 0) {
+                updateLiveDashboard();
+            }
+        }
+
+        function loadInitialLiveState() {
+            const liveState = JSON.parse(localStorage.getItem(LIVE_STATE_KEY) || '{}');
+            const now = Date.now();
+
+            Object.entries(liveState).forEach(([id, data]) => {
+                if (id !== playerId && now - data.timestamp < PLAYER_TIMEOUT) {
+                    livePlayers.set(id, data);
+                }
+            });
+        }
+
+        function updateLiveDashboard() {
+            const list = document.getElementById('livePlayersList');
+            const countEl = document.getElementById('playersCount');
+
+            // Create array of all players (including self)
+            const allPlayers = [];
+
+            // Add other players
+            livePlayers.forEach((data, id) => {
+                allPlayers.push({
+                    id: id,
+                    isMe: false,
+                    ...data
+                });
+            });
+
+            // Add self if game has started
+            if (playerName) {
+                allPlayers.push({
+                    id: playerId,
+                    isMe: true,
+                    name: playerName,
+                    score: score,
+                    level: level,
+                    lines: lines,
+                    status: gameRunning ? 'playing' : 'gameover',
+                    timestamp: Date.now()
+                });
+            }
+
+            // Sort by score
+            allPlayers.sort((a, b) => b.score - a.score);
+
+            // Update count
+            countEl.textContent = allPlayers.length;
+
+            if (allPlayers.length === 0) {
+                list.innerHTML = '<div class="no-players">Waiting for players...</div>';
+                return;
+            }
+
+            // Find max score for progress bars
+            const maxScore = Math.max(...allPlayers.map(p => p.score), 100);
+
+            list.innerHTML = allPlayers.map((player, index) => `
+                <div class="live-player-entry ${player.isMe ? 'is-me' : ''}" id="player-${player.id}">
+                    <div class="live-player-header">
+                        <span class="live-player-name">${index + 1}. ${player.name}</span>
+                        <span class="live-player-status ${player.status === 'playing' ? 'playing' : 'gameover'}">
+                            ${player.status === 'playing' ? 'PLAYING' : 'GAME OVER'}
+                        </span>
+                    </div>
+                    <div class="live-player-stats">
+                        <span>LVL ${player.level}</span>
+                        <span>${player.lines} lines</span>
+                    </div>
+                    <div class="live-player-score">${player.score.toLocaleString()}</div>
+                    <div class="live-player-bar">
+                        <div class="live-player-bar-fill" style="width: ${(player.score / maxScore) * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function flashPlayerUpdate(playerId) {
+            const el = document.getElementById(`player-${playerId}`);
+            if (el) {
+                el.classList.remove('updated');
+                void el.offsetWidth; // Trigger reflow
+                el.classList.add('updated');
+            }
+        }
+
+        // ========== SCREEN MANAGEMENT ==========
+        function showScreen(screenId) {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
+            document.getElementById(screenId).classList.add('show');
+        }
+
+        function hideAllScreens() {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
+        }
+
+        // ========== NAME ENTRY ==========
+        function submitName() {
+            const input = document.getElementById('nameInput');
+            const name = input.value.trim().toUpperCase() || 'PLAYER';
+            playerName = name;
+            playerId = generatePlayerId();
+
+            document.getElementById('currentPlayer').textContent = name;
+            document.getElementById('playerName').textContent = name;
+
+            const highScore = getPlayerHighScore(name);
+            document.getElementById('highScore').textContent = highScore;
+
+            // Start broadcasting
+            broadcastState();
+
+            showScreen('modeSelect');
+            updateLiveDashboard();
+        }
+
+        // ========== MODE SELECT ==========
+        function showModeSelect() {
+            hideAllScreens();
+            showScreen('modeSelect');
+            gameRunning = false;
+            broadcastState();
+        }
+
+        function startGame(mode) {
+            gameMode = mode;
+            initBoard();
+            score = 0;
+            level = 1;
+            lines = 0;
+            isNewHighScore = false;
+
+            const speeds = [1200, 800, 400];
+            dropInterval = speeds[mode];
+
+            updateUI();
+            hideAllScreens();
+
+            spawnPiece();
+            gameRunning = true;
+            lastDrop = performance.now();
+
+            // Broadcast game start
+            broadcastState();
+            updateLiveDashboard();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ========== LEADERBOARD ==========
+        function showLeaderboard() {
+            renderLeaderboard(playerName);
+            showScreen('leaderboard');
+        }
+
+        // ========== GAME FUNCTIONS ==========
+        function initBoard() {
+            board = [];
+            for (let r = 0; r < ROWS; r++) {
+                board[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    board[r][c] = 0;
+                }
+            }
+        }
+
+        function createPiece() {
+            const shapeIndex = Math.floor(Math.random() * SHAPES.length);
+            return {
+                shape: SHAPES[shapeIndex].map(row => [...row]),
+                name: SHAPE_NAMES[shapeIndex],
+                x: Math.floor(COLS / 2) - Math.floor(SHAPES[shapeIndex][0].length / 2),
+                y: 0
+            };
+        }
+
+        function drawBlock(ctx, x, y) {
+            ctx.fillStyle = LCD_COLOR;
+            ctx.fillRect(x * BLOCK_SIZE + 2, y * BLOCK_SIZE + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
+        }
+
+        function drawBoard() {
+            ctx.fillStyle = LCD_BG;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#8a9377';
+            ctx.lineWidth = 0.5;
+            for (let r = 0; r <= ROWS; r++) {
+                ctx.beginPath();
+                ctx.moveTo(0, r * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, r * BLOCK_SIZE);
+                ctx.stroke();
+            }
+            for (let c = 0; c <= COLS; c++) {
+                ctx.beginPath();
+                ctx.moveTo(c * BLOCK_SIZE, 0);
+                ctx.lineTo(c * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        drawBlock(ctx, c, r);
+                    }
+                }
+            }
+
+            if (currentPiece) {
+                const ghostY = getGhostY();
+                for (let r = 0; r < currentPiece.shape.length; r++) {
+                    for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                        if (currentPiece.shape[r][c]) {
+                            ctx.fillStyle = '#6a6a6a';
+                            ctx.fillRect(
+                                (currentPiece.x + c) * BLOCK_SIZE + 2,
+                                (ghostY + r) * BLOCK_SIZE + 2,
+                                BLOCK_SIZE - 4, BLOCK_SIZE - 4
+                            );
+                        }
+                    }
+                }
+            }
+
+            if (currentPiece) {
+                for (let r = 0; r < currentPiece.shape.length; r++) {
+                    for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                        if (currentPiece.shape[r][c]) {
+                            drawBlock(ctx, currentPiece.x + c, currentPiece.y + r);
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawNextPiece() {
+            nextCtx.fillStyle = LCD_BG;
+            nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+            if (nextPiece) {
+                const offsetX = (nextCanvas.width - nextPiece.shape[0].length * 12) / 2;
+                const offsetY = (nextCanvas.height - nextPiece.shape.length * 12) / 2;
+
+                for (let r = 0; r < nextPiece.shape.length; r++) {
+                    for (let c = 0; c < nextPiece.shape[r].length; c++) {
+                        if (nextPiece.shape[r][c]) {
+                            nextCtx.fillStyle = LCD_COLOR;
+                            nextCtx.fillRect(offsetX + c * 12, offsetY + r * 12, 10, 10);
+                        }
+                    }
+                }
+            }
+        }
+
+        function getGhostY() {
+            let ghostY = currentPiece.y;
+            while (!collision(currentPiece.shape, currentPiece.x, ghostY + 1)) {
+                ghostY++;
+            }
+            return ghostY;
+        }
+
+        function collision(shape, x, y) {
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const newX = x + c;
+                        const newY = y + r;
+
+                        if (newX < 0 || newX >= COLS || newY >= ROWS) {
+                            return true;
+                        }
+
+                        if (newY >= 0 && board[newY][newX]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rotate(shape) {
+            const rows = shape.length;
+            const cols = shape[0].length;
+            const rotated = [];
+
+            for (let c = 0; c < cols; c++) {
+                rotated[c] = [];
+                for (let r = rows - 1; r >= 0; r--) {
+                    rotated[c][rows - 1 - r] = shape[r][c];
+                }
+            }
+            return rotated;
+        }
+
+        function rotatePiece() {
+            const rotated = rotate(currentPiece.shape);
+            if (!collision(rotated, currentPiece.x, currentPiece.y)) {
+                currentPiece.shape = rotated;
+            } else if (!collision(rotated, currentPiece.x - 1, currentPiece.y)) {
+                currentPiece.shape = rotated;
+                currentPiece.x--;
+            } else if (!collision(rotated, currentPiece.x + 1, currentPiece.y)) {
+                currentPiece.shape = rotated;
+                currentPiece.x++;
+            }
+        }
+
+        function movePiece(dx, dy) {
+            if (!collision(currentPiece.shape, currentPiece.x + dx, currentPiece.y + dy)) {
+                currentPiece.x += dx;
+                currentPiece.y += dy;
+                return true;
+            }
+            return false;
+        }
+
+        function hardDrop() {
+            while (movePiece(0, 1)) {
+                score += 2;
+            }
+            placePiece();
+        }
+
+        function placePiece() {
+            for (let r = 0; r < currentPiece.shape.length; r++) {
+                for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                    if (currentPiece.shape[r][c]) {
+                        const y = currentPiece.y + r;
+                        const x = currentPiece.x + c;
+                        if (y >= 0) {
+                            board[y][x] = 1;
+                        }
+                    }
+                }
+            }
+
+            clearLines();
+            spawnPiece();
+        }
+
+        function clearLines() {
+            let linesCleared = 0;
+
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r].every(cell => cell === 1)) {
+                    board.splice(r, 1);
+                    board.unshift(new Array(COLS).fill(0));
+                    linesCleared++;
+                    r++;
+                }
+            }
+
+            if (linesCleared > 0) {
+                const points = [0, 100, 300, 500, 800];
+                score += points[linesCleared] * level;
+                lines += linesCleared;
+
+                const newLevel = Math.floor(lines / 10) + 1;
+                if (newLevel > level) {
+                    level = newLevel;
+                    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+                }
+
+                updateUI();
+            }
+        }
+
+        function spawnPiece() {
+            currentPiece = nextPiece || createPiece();
+            nextPiece = createPiece();
+            drawNextPiece();
+
+            if (collision(currentPiece.shape, currentPiece.x, currentPiece.y)) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+
+            isNewHighScore = updateLeaderboard(playerName, score);
+
+            const highScore = getPlayerHighScore(playerName);
+            document.getElementById('highScore').textContent = highScore;
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('newHigh').style.display = isNewHighScore ? 'block' : 'none';
+
+            // Show rank among all players
+            const allScores = [score, ...Array.from(livePlayers.values()).map(p => p.score)];
+            const sortedScores = allScores.sort((a, b) => b - a);
+            const rank = sortedScores.indexOf(score) + 1;
+            if (rank <= 3) {
+                const medals = ['🥇', '🥈', '🥉'];
+                document.getElementById('yourRank').textContent = medals[rank - 1] + ` RANK #${rank}`;
+                document.getElementById('yourRank').style.display = 'block';
+            } else {
+                document.getElementById('yourRank').style.display = 'none';
+            }
+
+            showScreen('gameOver');
+            broadcastGameOver();
+            broadcastState();
+            updateLiveDashboard();
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            document.getElementById('lines').textContent = lines;
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            if (timestamp - lastDrop > dropInterval) {
+                if (!movePiece(0, 1)) {
+                    placePiece();
+                }
+                lastDrop = timestamp;
+            }
+
+            drawBoard();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ========== EVENT LISTENERS ==========
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('nameEntry').classList.contains('show')) {
+                if (e.key === 'Enter') {
+                    submitName();
+                }
+                return;
+            }
+
+            if (!gameRunning) return;
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    movePiece(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    movePiece(1, 0);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (movePiece(0, 1)) score += 1;
+                    updateUI();
+                    break;
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                case ' ':
+                    rotatePiece();
+                    break;
+                case 'Enter':
+                    hardDrop();
+                    updateUI();
+                    break;
+            }
+            drawBoard();
+            e.preventDefault();
+        });
+
+        // Button controls
+        document.getElementById('btnLeft').addEventListener('click', () => {
+            if (gameRunning) { movePiece(-1, 0); drawBoard(); }
+        });
+        document.getElementById('btnRight').addEventListener('click', () => {
+            if (gameRunning) { movePiece(1, 0); drawBoard(); }
+        });
+        document.getElementById('btnDown').addEventListener('click', () => {
+            if (gameRunning) { if (movePiece(0, 1)) score += 1; updateUI(); drawBoard(); }
+        });
+        document.getElementById('btnUp').addEventListener('click', () => {
+            if (gameRunning) { rotatePiece(); drawBoard(); }
+        });
+        document.getElementById('btnRotate').addEventListener('click', () => {
+            if (gameRunning) { rotatePiece(); drawBoard(); }
+        });
+        document.getElementById('btnDrop').addEventListener('click', () => {
+            if (gameRunning) { hardDrop(); updateUI(); drawBoard(); }
+        });
+
+        // Touch controls
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameRunning) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 30) movePiece(1, 0);
+                else if (dx < -30) movePiece(-1, 0);
+            } else {
+                if (dy > 30) {
+                    if (movePiece(0, 1)) score += 1;
+                    updateUI();
+                }
+                else if (dy < -30) rotatePiece();
+            }
+            drawBoard();
+        });
+
+        let lastTap = 0;
+        canvas.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0 && gameRunning) {
+                hardDrop();
+                updateUI();
+                drawBoard();
+            }
+            lastTap = currentTime;
+        });
+
+        // ========== MULTIPLAYER SETUP ==========
+        bc.onmessage = handleBroadcast;
+
+        // Heartbeat - broadcast state every second while playing
+        setInterval(() => {
+            if (playerName) {
+                broadcastState();
+            }
+        }, HEARTBEAT_INTERVAL);
+
+        // Cleanup offline players every 2 seconds
+        setInterval(cleanupOfflinePlayers, 2000);
+
+        // ========== INITIALIZE ==========
+        initBoard();
+        drawBoard();
+        loadInitialLiveState();
+        showScreen('nameEntry');
+        document.getElementById('nameInput').focus();
+        updateLiveDashboard();
+
+        // Cleanup on page close
+        window.addEventListener('beforeunload', () => {
+            const liveState = JSON.parse(localStorage.getItem(LIVE_STATE_KEY) || '{}');
+            delete liveState[playerId];
+            localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(liveState));
+            bc.close();
+        });
+    </script>
+</body>
+</html>
